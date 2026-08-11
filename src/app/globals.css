@@ -1,0 +1,53 @@
+/* ============================================================
+   Chicken Price Manager - Global Styles
+   ============================================================ */
+
+@import "tailwindcss";
+
+/* Custom scrollbar for a cleaner look */
+::-webkit-scrollbar {
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d6d3d1;
+  border-radius: 2px;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent text selection on buttons for mobile */
+button {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Number input without spinners (cleaner price inputs) */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Loading pulse animation */
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}

@@ -1,0 +1,229 @@
+// ============================================================
+// Image Generator - Client-side image generation using html2canvas
+// ============================================================
+
+import html2canvas from 'html2canvas';
+import { PriceListData, UserSettings } from '@/types';
+
+/**
+ * Generate a vertical image of the price list.
+ * Creates a temporary DOM element, styles it, captures with html2canvas.
+ * Returns a Blob (PNG).
+ */
+export async function generateImage(
+  priceList: PriceListData,
+  settings: UserSettings
+): Promise<Blob> {
+  const isDark = settings.imageTheme === 'dark';
+
+  // Theme colors
+  const theme = isDark
+    ? {
+        bg: '#1C1917',
+        cardBg: '#292524',
+        headerBg: '#991B1B',
+        text: '#FAFAF9',
+        textSecondary: '#A8A29E',
+        price: '#FCA5A5',
+        border: '#44403C',
+        stripe: '#1C1917',
+      }
+    : {
+        bg: '#FAFAF9',
+        cardBg: '#FFFFFF',
+        headerBg: '#DC2626',
+        text: '#1C1917',
+        textSecondary: '#78716C',
+        price: '#DC2626',
+        border: '#E7E5E4',
+        stripe: '#F5F5F4',
+      };
+
+  const filteredItems = priceList.items
+    .filter((item) => item.price > 0)
+    .sort((a, b) => a.orderIndex - b.orderIndex);
+
+  // Build HTML for the image
+  const html = `
+    <div style="
+      width: 1080px;
+      background: ${theme.bg};
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      padding: 0;
+    ">
+      <!-- Header -->
+      <div style="
+        background: ${theme.headerBg};
+        padding: 48px 60px 40px;
+        text-align: center;
+      ">
+        <div style="
+          font-size: 20px;
+          color: rgba(255,255,255,0.8);
+          letter-spacing: 3px;
+          text-transform: uppercase;
+          margin-bottom: 12px;
+        ">🐔 Daily Price List</div>
+        <div style="
+          font-size: 42px;
+          font-weight: 800;
+          color: #FFFFFF;
+          margin-bottom: 12px;
+        ">${escapeHtml(priceList.shopName || 'Chicken Shop')}</div>
+        <div style="
+          font-size: 22px;
+          color: rgba(255,255,255,0.9);
+        ">${formatDate(priceList.date)}</div>
+      </div>
+
+      <!-- Items -->
+      <div style="padding: 40px 60px;">
+        ${filteredItems
+          .map(
+            (item, index) => `
+          <div style="
+            display: flex;
+            align-items: center;
+            padding: 24px 30px;
+            margin-bottom: 8px;
+            border-radius: 16px;
+            background: ${index % 2 === 0 ? theme.cardBg : theme.stripe};
+            border: 1px solid ${theme.border};
+          ">
+            <div style="
+              width: 48px;
+              height: 48px;
+              border-radius: 50%;
+              background: ${theme.headerBg};
+              color: #FFFFFF;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 20px;
+              font-weight: 700;
+              flex-shrink: 0;
+            ">${index + 1}</div>
+            <div style="
+              flex: 1;
+              margin-left: 24px;
+            ">
+              <div style="
+                font-size: 26px;
+                font-weight: 700;
+                color: ${theme.text};
+              ">${escapeHtml(item.itemName)}</div>
+              ${
+                item.note
+                  ? `<div style="
+                  font-size: 18px;
+                  color: ${theme.textSecondary};
+                  margin-top: 4px;
+                ">${escapeHtml(item.note)}</div>`
+                  : ''
+              }
+            </div>
+            <div style="
+              text-align: right;
+              flex-shrink: 0;
+            ">
+              <div style="
+                font-size: 32px;
+                font-weight: 800;
+                color: ${theme.price};
+              ">${settings.currency}${item.price}</div>
+              <div style="
+                font-size: 16px;
+                color: ${theme.textSecondary};
+              ">${item.unit || settings.defaultUnit}</div>
+            </div>
+          </div>
+        `
+          )
+          .join('')}
+      </div>
+
+      <!-- Footer -->
+      ${
+        settings.showFooter && settings.footerText
+          ? `
+        <div style="
+          padding: 24px 60px 40px;
+          text-align: center;
+          border-top: 1px solid ${theme.border};
+        ">
+          <div style="
+            font-size: 18px;
+            color: ${theme.textSecondary};
+            font-style: italic;
+          ">${escapeHtml(settings.footerText)}</div>
+        </div>
+      `
+          : ''
+      }
+
+      <!-- Branding -->
+      <div style="
+        padding: 16px 60px 32px;
+        text-align: center;
+      ">
+        <div style="
+          font-size: 14px;
+          color: ${isDark ? '#57534E' : '#D6D3D1'};
+        ">Generated by Chicken Price Manager</div>
+      </div>
+    </div>
+  `;
+
+  // Create a temporary container
+  const container = document.createElement('div');
+  container.innerHTML = html;
+  container.style.position = 'fixed';
+  container.style.top = '-99999px';
+  container.style.left = '-99999px';
+  document.body.appendChild(container);
+
+  try {
+    const canvas = await html2canvas(container.firstElementChild as HTMLElement, {
+      scale: 1,
+      useCORS: true,
+      backgroundColor: theme.bg,
+      width: 1080,
+    });
+
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Failed to generate image'));
+          }
+        },
+        'image/png',
+        1.0
+      );
+    });
+  } finally {
+    document.body.removeChild(container);
+  }
+}
+
+function escapeHtml(text: string): string {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function formatDate(dateStr: string): string {
+  try {
+    const date = new Date(dateStr + 'T00:00:00');
+    return date.toLocaleDateString('en-IN', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
+}
