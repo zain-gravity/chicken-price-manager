@@ -1,11 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { PriceItem, PriceListData, DEFAULT_ITEMS, UserSettings, DEFAULT_SETTINGS } from '@/types';
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlDate = searchParams.get('date');
+  const today = new Date().toISOString().split('T')[0];
+
+  const [dateString, setDateString] = useState(urlDate || today);
   const [items, setItems] = useState<PriceItem[]>([]);
   const [shopName, setShopName] = useState('My Chicken Shop');
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
@@ -15,16 +20,14 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [hasPreviousList, setHasPreviousList] = useState(false);
 
-  const today = new Date();
-  const dateString = today.toISOString().split('T')[0];
-  const displayDate = today.toLocaleDateString('en-IN', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
+  // Sync date string if URL changes
+  useEffect(() => {
+    if (urlDate) {
+      setDateString(urlDate);
+    }
+  }, [urlDate]);
 
-  // Fetch data on mount
+  // Fetch data on mount and when dateString changes
   useEffect(() => {
     async function fetchData() {
       try {
@@ -41,24 +44,24 @@ export default function DashboardPage() {
         }
 
         // Fetch price lists (latest first)
-        const listRes = await fetch('/api/price-lists?limit=5');
+        const listRes = await fetch('/api/price-lists?limit=10');
         if (listRes.ok) {
           const listResponse = await listRes.json();
           const lists: PriceListData[] = listResponse.data || [];
 
-          // Check if there's a today's list
-          const todayList = lists.find((l) => l.date === dateString);
-          if (todayList) {
+          // Check if there's a list for the selected date
+          const selectedList = lists.find((l) => l.date === dateString);
+          if (selectedList && selectedList.items && selectedList.items.length > 0) {
             setItems(
-              todayList.items.sort((a, b) => a.orderIndex - b.orderIndex)
+              selectedList.items.sort((a, b) => a.orderIndex - b.orderIndex)
             );
           } else {
-            // Use default items
+            // Use default items if no list exists for this date
             setItems(DEFAULT_ITEMS.map((item) => ({ ...item })));
           }
 
-          // Check if there's a previous (non-today) list
-          setHasPreviousList(lists.some((l) => l.date !== dateString));
+          // Check if there's a previous list (any list before the currently selected date)
+          setHasPreviousList(lists.some((l) => l.date < dateString));
         } else {
           setItems(DEFAULT_ITEMS.map((item) => ({ ...item })));
         }
@@ -90,8 +93,8 @@ export default function DashboardPage() {
             date: dateString,
             items: items.map((item, index) => ({
               itemName: item.itemName,
-              price: item.price,
-              unit: item.unit,
+              price: item.price || 0,
+              unit: item.unit || settings.defaultUnit,
               note: item.note || '',
               orderIndex: index,
             })),
@@ -113,7 +116,7 @@ export default function DashboardPage() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [items, shopName, loading, dateString]);
+  }, [items, shopName, loading, dateString, settings.defaultUnit]);
 
   const updateItem = (index: number, updates: Partial<PriceItem>) => {
     setItems((prev) =>
@@ -138,25 +141,13 @@ export default function DashboardPage() {
     setItems((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const moveItem = (index: number, direction: 'up' | 'down') => {
-    setItems((prev) => {
-      const newItems = [...prev];
-      if (direction === 'up' && index > 0) {
-        [newItems[index - 1], newItems[index]] = [newItems[index], newItems[index - 1]];
-      } else if (direction === 'down' && index < newItems.length - 1) {
-        [newItems[index + 1], newItems[index]] = [newItems[index], newItems[index + 1]];
-      }
-      return newItems;
-    });
-  };
-
   const copyFromLastDay = async () => {
     try {
       const listRes = await fetch('/api/price-lists?limit=10');
       if (listRes.ok) {
         const listResponse = await listRes.json();
         const lists: PriceListData[] = listResponse.data || [];
-        const prevList = lists.find((l) => l.date !== dateString);
+        const prevList = lists.find((l) => l.date < dateString);
         if (prevList && prevList.items.length > 0) {
           setItems(
             prevList.items
@@ -176,13 +167,19 @@ export default function DashboardPage() {
     }
   };
 
+  const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    setDateString(newDate);
+    router.push(`/dashboard?date=${newDate}`);
+  };
+
   if (loading) {
     return (
       <div className="space-y-4 animate-pulse">
         <div className="h-10 bg-stone-200 rounded w-2/3 mb-2"></div>
         <div className="h-5 bg-stone-200 rounded w-1/3 mb-6"></div>
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white rounded-2xl h-40 p-4 shadow-sm mb-3"></div>
+          <div key={i} className="bg-white rounded-2xl h-16 p-4 shadow-sm mb-3"></div>
         ))}
       </div>
     );
@@ -200,7 +197,14 @@ export default function DashboardPage() {
             className="text-2xl font-bold text-stone-900 bg-transparent border-none focus:ring-2 focus:ring-red-600 rounded px-1 -mx-1 block w-full outline-none"
             placeholder="Shop Name"
           />
-          <p className="text-stone-500 mt-1 font-medium">{displayDate}</p>
+          <div className="mt-2 flex items-center">
+            <input 
+              type="date"
+              value={dateString}
+              onChange={handleDateChange}
+              className="bg-stone-100 text-stone-700 font-medium px-3 py-1.5 rounded-lg border border-stone-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
+          </div>
         </div>
         <div className="text-sm font-medium whitespace-nowrap min-h-[24px] flex items-center">
           {saving && <span className="text-stone-500">Saving...</span>}
@@ -214,87 +218,47 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Items list */}
+      {/* Simplified Items list */}
       <div className="space-y-3">
         {items.map((item, index) => (
           <div
             key={index}
-            className="bg-white rounded-2xl shadow-sm p-4 relative group transition-all"
+            className="bg-white rounded-2xl shadow-sm p-2 sm:p-3 relative group flex items-center gap-3 transition-all border border-stone-100"
           >
             {/* Item name */}
-            <div className="flex gap-2 mb-3">
+            <div className="flex-1">
               <input
                 type="text"
                 value={item.itemName}
                 onChange={(e) => updateItem(index, { itemName: e.target.value })}
-                className="flex-1 bg-stone-50 border border-stone-200 rounded-lg px-3 min-h-[48px] focus:outline-none focus:ring-2 focus:ring-red-600 w-full font-medium"
-                placeholder="Item name (e.g. Curry Cut)"
+                className="w-full bg-transparent border-none rounded-lg px-2 min-h-[48px] focus:outline-none focus:bg-stone-50 focus:ring-2 focus:ring-red-600 font-medium text-stone-900"
+                placeholder="Item name"
               />
             </div>
 
-            {/* Price + unit row */}
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-500 font-medium">
-                  {settings.currency}
-                </span>
-                <input
-                  type="number"
-                  value={item.price || ''}
-                  onChange={(e) =>
-                    updateItem(index, { price: parseFloat(e.target.value) || 0 })
-                  }
-                  className="w-full bg-stone-50 border border-stone-200 rounded-lg pl-8 pr-3 min-h-[48px] focus:outline-none focus:ring-2 focus:ring-red-600 font-medium"
-                  placeholder="0"
-                />
-              </div>
-
-              <select
-                value={item.unit}
-                onChange={(e) => updateItem(index, { unit: e.target.value })}
-                className="flex-1 bg-stone-50 border border-stone-200 rounded-lg px-3 min-h-[48px] focus:outline-none focus:ring-2 focus:ring-red-600 text-stone-700"
-              >
-                <option value="per kg">per kg</option>
-                <option value="per piece">per piece</option>
-                <option value="per 500g">per 500g</option>
-                <option value="per pack">per pack</option>
-              </select>
-            </div>
-
-            {/* Note */}
-            <div className="mt-3">
+            {/* Price row */}
+            <div className="w-32 sm:w-40 relative flex-shrink-0">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 font-medium">
+                {settings.currency}
+              </span>
               <input
-                type="text"
-                value={item.note || ''}
-                onChange={(e) => updateItem(index, { note: e.target.value })}
-                className="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 min-h-[40px] text-sm focus:outline-none focus:ring-2 focus:ring-red-600 placeholder-stone-400"
-                placeholder="Note (optional, e.g. Fresh stock)"
+                type="number"
+                value={item.price || ''}
+                onChange={(e) =>
+                  updateItem(index, { price: parseFloat(e.target.value) || 0 })
+                }
+                className="w-full bg-stone-50 border border-stone-200 rounded-lg pl-8 pr-3 min-h-[48px] focus:outline-none focus:ring-2 focus:ring-red-600 font-bold text-red-600"
+                placeholder="0"
               />
             </div>
 
-            {/* Mobile controls */}
-            <div className="flex justify-end gap-2 mt-3 border-t border-stone-100 pt-3">
-              <button
-                onClick={() => moveItem(index, 'up')}
-                disabled={index === 0}
-                className="flex-1 max-w-[60px] min-h-[44px] flex items-center justify-center bg-stone-50 text-stone-600 rounded-xl disabled:opacity-30 border border-stone-200"
-              >
-                ▲
-              </button>
-              <button
-                onClick={() => moveItem(index, 'down')}
-                disabled={index === items.length - 1}
-                className="flex-1 max-w-[60px] min-h-[44px] flex items-center justify-center bg-stone-50 text-stone-600 rounded-xl disabled:opacity-30 border border-stone-200"
-              >
-                ▼
-              </button>
-              <button
-                onClick={() => deleteItem(index)}
-                className="flex-1 max-w-[60px] min-h-[44px] flex items-center justify-center bg-red-50 text-red-600 rounded-xl border border-red-100 ml-auto"
-              >
-                🗑️
-              </button>
-            </div>
+            {/* Delete button */}
+            <button
+              onClick={() => deleteItem(index)}
+              className="w-12 h-12 flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0"
+            >
+              ✕
+            </button>
           </div>
         ))}
       </div>
@@ -303,7 +267,7 @@ export default function DashboardPage() {
       <div className="space-y-3 pt-2">
         <button
           onClick={addItem}
-          className="w-full min-h-[56px] border-2 border-dashed border-stone-300 text-stone-500 rounded-xl font-medium hover:border-red-600 hover:text-red-600 transition-colors flex items-center justify-center text-lg"
+          className="w-full h-14 border-2 border-dashed border-stone-300 text-stone-500 rounded-xl font-medium hover:border-red-600 hover:text-red-600 transition-colors flex items-center justify-center text-lg"
         >
           + Add Item
         </button>
@@ -311,9 +275,9 @@ export default function DashboardPage() {
         {hasPreviousList && (
           <button
             onClick={copyFromLastDay}
-            className="w-full min-h-[48px] bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition-colors flex items-center justify-center"
+            className="w-full h-12 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition-colors flex items-center justify-center"
           >
-            📋 Copy from Last Day
+            📋 Copy from Previous Day
           </button>
         )}
       </div>
@@ -321,12 +285,20 @@ export default function DashboardPage() {
       {/* Preview button */}
       <div className="pt-8 mt-4 border-t border-stone-200">
         <button
-          onClick={() => router.push('/preview')}
+          onClick={() => router.push(`/preview?date=${dateString}`)}
           className="w-full h-14 bg-red-600 text-white rounded-xl font-bold text-lg hover:bg-red-700 active:bg-red-800 shadow-sm transition-colors flex items-center justify-center"
         >
           Preview & Export
         </button>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center text-stone-500">Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

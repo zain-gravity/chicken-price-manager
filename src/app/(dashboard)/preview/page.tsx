@@ -1,13 +1,19 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { PriceListData, UserSettings } from '@/types'
 import { generatePDF } from '@/lib/export/pdf-generator'
 import { generateImage } from '@/lib/export/image-generator'
 import { shareFile, downloadFile, generateFileName } from '@/lib/share'
 
-export default function PreviewPage() {
+function PreviewContent() {
+  const searchParams = useSearchParams()
+  const urlDate = searchParams.get('date')
+  const defaultDate = new Date().toISOString().split('T')[0]
+  const viewDate = urlDate || defaultDate
+
   const [priceList, setPriceList] = useState<PriceListData | null>(null)
   const [settings, setSettings] = useState<UserSettings | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -17,20 +23,16 @@ export default function PreviewPage() {
     async function loadData() {
       try {
         const [historyRes, settingsRes] = await Promise.all([
-          fetch('/api/price-lists'),
+          fetch('/api/price-lists?limit=10'),
           fetch('/api/settings')
         ])
         const historyData = await historyRes.json()
         const settingsData = await settingsRes.json()
 
         if (historyData.success && historyData.data.length > 0) {
-          const todayIso = new Date().toISOString().split('T')[0]
-          
-          // API returns sorted by date desc, filter for today's date
-          const todaysList = historyData.data.find((l: PriceListData) => l.date === todayIso)
-          
-          if (todaysList) {
-            setPriceList(todaysList)
+          const targetList = historyData.data.find((l: PriceListData) => l.date === viewDate)
+          if (targetList) {
+            setPriceList(targetList)
           }
         }
         if (settingsData.success && settingsData.data) {
@@ -43,7 +45,7 @@ export default function PreviewPage() {
       }
     }
     loadData()
-  }, [])
+  }, [viewDate])
 
   const handleExportPDF = async (share = false) => {
     if (!priceList || !settings) return
@@ -110,10 +112,10 @@ export default function PreviewPage() {
     return (
       <div className="p-4 sm:p-6 max-w-lg mx-auto mt-12 text-center">
         <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
-          <h2 className="text-xl font-bold text-stone-900 mb-2">No prices set for today</h2>
-          <p className="text-stone-500 mb-6">Create today's price list to see the preview and export it.</p>
+          <h2 className="text-xl font-bold text-stone-900 mb-2">No prices found for this date</h2>
+          <p className="text-stone-500 mb-6">Create a price list for {formatDate(viewDate)} to see the preview.</p>
           <Link 
-            href="/dashboard"
+            href={`/dashboard?date=${viewDate}`}
             className="inline-flex items-center justify-center h-12 px-6 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors w-full"
           >
             Go to Dashboard
@@ -148,7 +150,7 @@ export default function PreviewPage() {
               </div>
               <div className="text-right">
                 <span className="font-bold text-red-600">{settings?.currency || '₹'}{item.price}</span>
-                <span className="text-stone-500 text-sm ml-1">/{item.unit}</span>
+                <span className="text-stone-500 text-sm ml-1">/{item.unit || settings?.defaultUnit}</span>
               </div>
             </div>
           ))}
@@ -169,7 +171,7 @@ export default function PreviewPage() {
       {/* Action Buttons */}
       <div className="space-y-4">
         <Link 
-          href="/dashboard"
+          href={`/dashboard?date=${viewDate}`}
           className="flex items-center justify-center h-12 rounded-xl border-2 border-stone-200 font-medium text-stone-700 hover:bg-stone-50 transition-colors w-full"
         >
           Edit Prices
@@ -210,6 +212,14 @@ export default function PreviewPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function PreviewPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center text-stone-500">Loading...</div>}>
+      <PreviewContent />
+    </Suspense>
   )
 }
 
