@@ -3,30 +3,22 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { PriceListData, UserSettings } from '@/types'
+import { PriceListData } from '@/types'
 
 export default function HistoryPage() {
   const router = useRouter()
   const [priceLists, setPriceLists] = useState<PriceListData[]>([])
-  const [settings, setSettings] = useState<UserSettings | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [historyRes, settingsRes] = await Promise.all([
-          fetch('/api/price-lists?limit=50'),
-          fetch('/api/settings')
-        ])
+        const historyRes = await fetch('/api/price-lists?limit=50')
         const historyData = await historyRes.json()
-        const settingsData = await settingsRes.json()
 
-        if (historyData.success) {
+        if (historyData.success && historyData.data) {
           setPriceLists(historyData.data)
-        }
-        if (settingsData.success && settingsData.data) {
-          setSettings(settingsData.data.settings || settingsData.data)
         }
       } catch (error) {
         console.error('Failed to load history:', error)

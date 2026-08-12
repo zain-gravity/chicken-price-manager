@@ -29,7 +29,7 @@ export default function LoginPage() {
       } else {
         router.push('/dashboard');
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred during login');
     } finally {
       setLoading(false);
@@ -87,7 +87,7 @@ export default function LoginPage() {
       </form>
 
       <div className="mt-6 text-center text-sm text-stone-500">
-        Don't have an account?{' '}
+        Don&apos;t have an account?{' '}
         <Link href="/signup" className="text-red-600 hover:text-red-700 font-medium">
           Sign up
         </Link>

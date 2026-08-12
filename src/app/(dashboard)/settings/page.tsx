@@ -1,9 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { signOut } from 'next-auth/react';
+import { useState, useEffect } from 'react';
 import { UserSettings, DEFAULT_SETTINGS } from '@/types';
-import Link from 'next/link';
 
 export default function SettingsPage() {
   const [shopName, setShopName] = useState('');

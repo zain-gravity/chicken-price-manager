@@ -10,7 +10,7 @@ function DashboardContent() {
   const urlDate = searchParams.get('date');
   const today = new Date().toISOString().split('T')[0];
 
-  const [dateString, setDateString] = useState(urlDate || today);
+  const currentDate = urlDate || today;
   const [items, setItems] = useState<PriceItem[]>([]);
   const [shopName, setShopName] = useState('My Chicken Shop');
   const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
@@ -20,14 +20,7 @@ function DashboardContent() {
   const [error, setError] = useState<string | null>(null);
   const [hasPreviousList, setHasPreviousList] = useState(false);
 
-  // Sync date string if URL changes
-  useEffect(() => {
-    if (urlDate) {
-      setDateString(urlDate);
-    }
-  }, [urlDate]);
-
-  // Fetch data on mount and when dateString changes
+  // Fetch data on mount and when currentDate changes
   useEffect(() => {
     async function fetchData() {
       try {
@@ -50,7 +43,7 @@ function DashboardContent() {
           const lists: PriceListData[] = listResponse.data || [];
 
           // Check if there's a list for the selected date
-          const selectedList = lists.find((l) => l.date === dateString);
+          const selectedList = lists.find((l) => l.date === currentDate);
           if (selectedList && selectedList.items && selectedList.items.length > 0) {
             setItems(
               selectedList.items.sort((a, b) => a.orderIndex - b.orderIndex)
@@ -61,7 +54,7 @@ function DashboardContent() {
           }
 
           // Check if there's a previous list (any list before the currently selected date)
-          setHasPreviousList(lists.some((l) => l.date < dateString));
+          setHasPreviousList(lists.some((l) => l.date < currentDate));
         } else {
           setItems(DEFAULT_ITEMS.map((item) => ({ ...item })));
         }
@@ -74,7 +67,7 @@ function DashboardContent() {
       }
     }
     fetchData();
-  }, [dateString]);
+  }, [currentDate]);
 
   // Debounced auto-save
   useEffect(() => {
@@ -90,7 +83,7 @@ function DashboardContent() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             shopName,
-            date: dateString,
+            date: currentDate,
             items: items.map((item, index) => ({
               itemName: item.itemName,
               price: item.price || 0,
@@ -116,7 +109,7 @@ function DashboardContent() {
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [items, shopName, loading, dateString, settings.defaultUnit]);
+  }, [items, shopName, loading, currentDate, settings.defaultUnit]);
 
   const updateItem = (index: number, updates: Partial<PriceItem>) => {
     setItems((prev) =>
@@ -147,7 +140,7 @@ function DashboardContent() {
       if (listRes.ok) {
         const listResponse = await listRes.json();
         const lists: PriceListData[] = listResponse.data || [];
-        const prevList = lists.find((l) => l.date < dateString);
+        const prevList = lists.find((l) => l.date < currentDate);
         if (prevList && prevList.items.length > 0) {
           setItems(
             prevList.items
@@ -169,7 +162,6 @@ function DashboardContent() {
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newDate = e.target.value;
-    setDateString(newDate);
     router.push(`/dashboard?date=${newDate}`);
   };
 
@@ -201,7 +193,7 @@ function DashboardContent() {
             <div className="relative">
               <input 
                 type="date"
-                value={dateString}
+                value={currentDate}
                 onChange={handleDateChange}
                 className="glass-input text-stone-700 font-bold px-4 py-2.5 rounded-xl text-sm shadow-sm"
               />
@@ -288,7 +280,7 @@ function DashboardContent() {
       {/* Preview button */}
       <div className="pt-10 mt-6 border-t border-white/30">
         <button
-          onClick={() => router.push(`/preview?date=${dateString}`)}
+          onClick={() => router.push(`/preview?date=${currentDate}`)}
           className="w-full h-16 bg-gradient-to-r from-red-600 to-rose-500 text-white rounded-2xl font-extrabold text-xl shadow-xl shadow-red-500/30 hover:shadow-red-500/50 hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3"
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
