@@ -175,11 +175,11 @@ function DashboardContent() {
 
   if (loading) {
     return (
-      <div className="space-y-4 animate-pulse">
-        <div className="h-10 bg-stone-200 rounded w-2/3 mb-2"></div>
-        <div className="h-5 bg-stone-200 rounded w-1/3 mb-6"></div>
+      <div className="space-y-4 animate-pulse-subtle">
+        <div className="h-10 bg-white/40 backdrop-blur rounded-2xl w-2/3 mb-2"></div>
+        <div className="h-5 bg-white/40 backdrop-blur rounded-full w-1/3 mb-6"></div>
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-white rounded-2xl h-16 p-4 shadow-sm mb-3"></div>
+          <div key={i} className="glass-panel rounded-2xl h-20 p-4 shadow-sm mb-3 border-white/40"></div>
         ))}
       </div>
     );
@@ -188,42 +188,42 @@ function DashboardContent() {
   return (
     <div className="space-y-6">
       {/* Header with shop name and date */}
-      <div className="flex justify-between items-start">
-        <div className="flex-1 mr-4">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 glass-panel p-6 rounded-3xl mb-8">
+        <div className="flex-1 w-full">
           <input
             type="text"
             value={shopName}
             onChange={(e) => setShopName(e.target.value)}
-            className="text-2xl font-bold text-stone-900 bg-transparent border-none focus:ring-2 focus:ring-red-600 rounded px-1 -mx-1 block w-full outline-none"
-            placeholder="Shop Name"
+            className="text-3xl font-extrabold text-stone-900 bg-transparent border-none focus:ring-0 px-0 block w-full outline-none placeholder-stone-400 drop-shadow-sm transition-all"
+            placeholder="Your Shop Name"
           />
-          <div className="mt-2 flex items-center">
-            <input 
-              type="date"
-              value={dateString}
-              onChange={handleDateChange}
-              className="bg-stone-100 text-stone-700 font-medium px-3 py-1.5 rounded-lg border border-stone-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
+          <div className="mt-3 flex items-center gap-3">
+            <div className="relative">
+              <input 
+                type="date"
+                value={dateString}
+                onChange={handleDateChange}
+                className="glass-input text-stone-700 font-bold px-4 py-2.5 rounded-xl text-sm shadow-sm"
+              />
+            </div>
+            {saving && <span className="text-stone-500 text-sm font-semibold animate-pulse">Saving...</span>}
+            {saved && <span className="text-green-600 text-sm font-semibold">✓ Saved</span>}
           </div>
-        </div>
-        <div className="text-sm font-medium whitespace-nowrap min-h-[24px] flex items-center">
-          {saving && <span className="text-stone-500">Saving...</span>}
-          {saved && <span className="text-green-600">✓ Saved</span>}
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-medium">
+        <div className="glass-panel bg-red-500/10 border-red-500/20 text-red-700 p-4 rounded-2xl font-semibold backdrop-blur-md">
           {error}
         </div>
       )}
 
       {/* Simplified Items list */}
-      <div className="space-y-3">
+      <div className="space-y-4">
         {items.map((item, index) => (
           <div
             key={index}
-            className="bg-white rounded-2xl shadow-sm p-2 sm:p-3 relative group flex items-center gap-3 transition-all border border-stone-100"
+            className="glass-panel rounded-2xl p-3 sm:p-4 flex items-center gap-3 sm:gap-4 transition-all hover:shadow-lg hover:-translate-y-0.5 group"
           >
             {/* Item name */}
             <div className="flex-1">
@@ -231,14 +231,14 @@ function DashboardContent() {
                 type="text"
                 value={item.itemName}
                 onChange={(e) => updateItem(index, { itemName: e.target.value })}
-                className="w-full bg-transparent border-none rounded-lg px-2 min-h-[48px] focus:outline-none focus:bg-stone-50 focus:ring-2 focus:ring-red-600 font-medium text-stone-900"
+                className="w-full glass-input rounded-xl px-4 min-h-[52px] font-bold text-stone-900 placeholder-stone-400 text-lg"
                 placeholder="Item name"
               />
             </div>
 
             {/* Price row */}
-            <div className="w-32 sm:w-40 relative flex-shrink-0">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 font-medium">
+            <div className="w-36 sm:w-44 relative flex-shrink-0">
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-500 font-bold text-lg">
                 {settings.currency}
               </span>
               <input
@@ -247,7 +247,7 @@ function DashboardContent() {
                 onChange={(e) =>
                   updateItem(index, { price: parseFloat(e.target.value) || 0 })
                 }
-                className="w-full bg-stone-50 border border-stone-200 rounded-lg pl-8 pr-3 min-h-[48px] focus:outline-none focus:ring-2 focus:ring-red-600 font-bold text-red-600"
+                className="w-full glass-input rounded-xl pl-10 pr-4 min-h-[52px] font-extrabold text-red-600 text-lg shadow-inner"
                 placeholder="0"
               />
             </div>
@@ -255,39 +255,43 @@ function DashboardContent() {
             {/* Delete button */}
             <button
               onClick={() => deleteItem(index)}
-              className="w-12 h-12 flex items-center justify-center text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0"
+              className="w-12 h-12 flex items-center justify-center text-stone-400 hover:text-white hover:bg-red-500/80 rounded-xl transition-all flex-shrink-0 backdrop-blur-md opacity-60 sm:opacity-0 group-hover:opacity-100 hover:opacity-100 shadow-sm"
+              title="Delete Item"
             >
-              ✕
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path></svg>
             </button>
           </div>
         ))}
       </div>
 
       {/* Action buttons */}
-      <div className="space-y-3 pt-2">
+      <div className="space-y-4 pt-4">
         <button
           onClick={addItem}
-          className="w-full h-14 border-2 border-dashed border-stone-300 text-stone-500 rounded-xl font-medium hover:border-red-600 hover:text-red-600 transition-colors flex items-center justify-center text-lg"
+          className="w-full h-16 glass-panel border-dashed border-2 border-stone-400/50 text-stone-600 rounded-2xl font-bold hover:border-red-500/70 hover:text-red-600 hover:bg-white/30 transition-all flex items-center justify-center text-lg gap-2"
         >
-          + Add Item
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Add Item
         </button>
 
         {hasPreviousList && (
           <button
             onClick={copyFromLastDay}
-            className="w-full h-12 bg-stone-100 text-stone-700 rounded-xl font-medium hover:bg-stone-200 transition-colors flex items-center justify-center"
+            className="w-full h-14 glass-button text-stone-700 rounded-2xl font-bold transition-all flex items-center justify-center gap-2"
           >
-            📋 Copy from Previous Day
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+            Copy from Previous Day
           </button>
         )}
       </div>
 
       {/* Preview button */}
-      <div className="pt-8 mt-4 border-t border-stone-200">
+      <div className="pt-10 mt-6 border-t border-white/30">
         <button
           onClick={() => router.push(`/preview?date=${dateString}`)}
-          className="w-full h-14 bg-red-600 text-white rounded-xl font-bold text-lg hover:bg-red-700 active:bg-red-800 shadow-sm transition-colors flex items-center justify-center"
+          className="w-full h-16 bg-gradient-to-r from-red-600 to-rose-500 text-white rounded-2xl font-extrabold text-xl shadow-xl shadow-red-500/30 hover:shadow-red-500/50 hover:-translate-y-1 active:translate-y-0 transition-all flex items-center justify-center gap-3"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
           Preview & Export
         </button>
       </div>

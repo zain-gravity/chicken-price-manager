@@ -99,10 +99,10 @@ function PreviewContent() {
   if (isLoading) {
     return (
       <div className="p-4 sm:p-6 max-w-lg mx-auto space-y-4">
-        <div className="h-96 bg-stone-100 rounded-2xl animate-pulse"></div>
+        <div className="h-96 bg-white/40 backdrop-blur rounded-3xl animate-pulse-subtle"></div>
         <div className="grid grid-cols-2 gap-4">
-          <div className="h-12 bg-stone-100 rounded-xl animate-pulse"></div>
-          <div className="h-12 bg-stone-100 rounded-xl animate-pulse"></div>
+          <div className="h-14 bg-white/40 backdrop-blur rounded-2xl animate-pulse-subtle"></div>
+          <div className="h-14 bg-white/40 backdrop-blur rounded-2xl animate-pulse-subtle"></div>
         </div>
       </div>
     )
@@ -111,12 +111,13 @@ function PreviewContent() {
   if (!priceList) {
     return (
       <div className="p-4 sm:p-6 max-w-lg mx-auto mt-12 text-center">
-        <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-8">
-          <h2 className="text-xl font-bold text-stone-900 mb-2">No prices found for this date</h2>
-          <p className="text-stone-500 mb-6">Create a price list for {formatDate(viewDate)} to see the preview.</p>
+        <div className="glass-panel rounded-3xl p-8 shadow-xl">
+          <div className="text-4xl mb-4">📝</div>
+          <h2 className="text-2xl font-extrabold text-stone-900 mb-2">No prices found</h2>
+          <p className="text-stone-600 font-medium mb-8">Create a price list for {formatDate(viewDate)} to see the preview.</p>
           <Link 
             href={`/dashboard?date=${viewDate}`}
-            className="inline-flex items-center justify-center h-12 px-6 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors w-full"
+            className="inline-flex items-center justify-center h-14 px-8 rounded-2xl bg-gradient-to-r from-red-600 to-rose-500 text-white font-bold hover:shadow-lg hover:shadow-red-500/30 transition-all hover:-translate-y-1 w-full"
           >
             Go to Dashboard
           </Link>
@@ -128,42 +129,43 @@ function PreviewContent() {
   const validItems = priceList.items.filter(item => item.price > 0)
 
   return (
-    <div className="p-4 sm:p-6 max-w-lg mx-auto space-y-6 pb-24">
+    <div className="p-4 sm:p-6 max-w-lg mx-auto space-y-8 pb-24">
       {/* Preview Card */}
-      <div className="bg-white rounded-2xl shadow-lg overflow-hidden border border-stone-200">
-        <div className="bg-red-600 text-white p-6 text-center rounded-t-2xl">
-          <h1 className="text-2xl font-bold mb-1">{priceList.shopName}</h1>
-          <p className="text-sm opacity-90">{formatDate(priceList.date)}</p>
+      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border border-white/50 relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-white/40 to-white/10 pointer-events-none"></div>
+        <div className="bg-gradient-to-r from-red-600 to-rose-500 text-white p-8 text-center relative z-10">
+          <h1 className="text-3xl font-extrabold mb-1 drop-shadow-sm">{priceList.shopName}</h1>
+          <p className="text-sm font-medium opacity-90">{formatDate(priceList.date)}</p>
         </div>
         
-        <div className="p-4 space-y-2">
+        <div className="p-6 space-y-3 relative z-10">
           {validItems.map((item, idx) => (
             <div 
               key={idx}
-              className={`flex items-center justify-between p-3 rounded-xl ${idx % 2 === 0 ? 'bg-stone-50' : 'bg-white'}`}
+              className={`flex items-center justify-between p-4 rounded-2xl ${idx % 2 === 0 ? 'bg-stone-50/80' : 'bg-transparent'} transition-colors`}
             >
-              <div className="flex items-center gap-3">
-                <div className="w-6 h-6 rounded-full bg-red-100 text-red-600 flex items-center justify-center text-xs font-bold shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-8 h-8 rounded-xl bg-red-100 text-red-600 flex items-center justify-center text-sm font-bold shrink-0 shadow-sm">
                   {idx + 1}
                 </div>
-                <span className="font-semibold text-stone-900">{item.itemName}</span>
+                <span className="font-bold text-stone-900 text-lg">{item.itemName}</span>
               </div>
               <div className="text-right">
-                <span className="font-bold text-red-600">{settings?.currency || '₹'}{item.price}</span>
-                <span className="text-stone-500 text-sm ml-1">/{item.unit || settings?.defaultUnit}</span>
+                <span className="font-extrabold text-red-600 text-xl">{settings?.currency || '₹'}{item.price}</span>
+                <span className="text-stone-500 font-medium text-sm ml-1">/{item.unit || settings?.defaultUnit}</span>
               </div>
             </div>
           ))}
           {validItems.length === 0 && (
-            <div className="text-center py-6 text-stone-500">
+            <div className="text-center py-10 font-medium text-stone-500 bg-stone-50 rounded-2xl">
               No items with prices set.
             </div>
           )}
         </div>
 
         {settings?.showFooter && settings.footerText && (
-          <div className="border-t border-stone-100 p-4 text-center bg-stone-50">
-            <p className="italic text-stone-500 text-sm">{settings.footerText}</p>
+          <div className="border-t border-stone-100/50 p-6 text-center bg-stone-50/50 relative z-10">
+            <p className="italic text-stone-500 font-medium text-sm">{settings.footerText}</p>
           </div>
         )}
       </div>
@@ -172,31 +174,32 @@ function PreviewContent() {
       <div className="space-y-4">
         <Link 
           href={`/dashboard?date=${viewDate}`}
-          className="flex items-center justify-center h-12 rounded-xl border-2 border-stone-200 font-medium text-stone-700 hover:bg-stone-50 transition-colors w-full"
+          className="flex items-center justify-center h-14 rounded-2xl glass-button font-bold text-stone-800 transition-all w-full gap-2"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
           Edit Prices
         </Link>
         
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             onClick={() => handleExportPDF(false)}
             disabled={!!isExporting}
-            className="flex items-center justify-center gap-2 h-12 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors disabled:opacity-70"
+            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-gradient-to-r from-red-600 to-rose-500 text-white font-bold hover:shadow-lg hover:-translate-y-1 transition-all disabled:opacity-70 disabled:hover:translate-y-0 shadow-red-500/30"
           >
-            {isExporting === 'pdf' ? 'Generating...' : 'Export as PDF'}
+            {isExporting === 'pdf' ? 'Generating...' : 'Export PDF'}
           </button>
           <button
             onClick={() => handleExportImage(false)}
             disabled={!!isExporting}
-            className="flex items-center justify-center gap-2 h-12 rounded-xl bg-green-600 text-white font-medium hover:bg-green-700 transition-colors disabled:opacity-70"
+            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold hover:shadow-lg hover:-translate-y-1 transition-all disabled:opacity-70 disabled:hover:translate-y-0 shadow-emerald-500/30"
           >
-            {isExporting === 'image' ? 'Generating...' : 'Export as Image'}
+            {isExporting === 'image' ? 'Generating...' : 'Export Image'}
           </button>
           
           <button
             onClick={() => handleExportPDF(true)}
             disabled={!!isExporting}
-            className="flex items-center justify-center gap-2 h-12 rounded-xl bg-stone-800 text-white font-medium hover:bg-stone-900 transition-colors disabled:opacity-70"
+            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-stone-900 text-white font-bold hover:shadow-lg hover:-translate-y-1 transition-all disabled:opacity-70 disabled:hover:translate-y-0 shadow-stone-900/30"
           >
             <ShareIcon />
             {isExporting === 'share-pdf' ? 'Sharing...' : 'Share PDF'}
@@ -204,7 +207,7 @@ function PreviewContent() {
           <button
             onClick={() => handleExportImage(true)}
             disabled={!!isExporting}
-            className="flex items-center justify-center gap-2 h-12 rounded-xl bg-stone-800 text-white font-medium hover:bg-stone-900 transition-colors disabled:opacity-70"
+            className="flex items-center justify-center gap-2 h-14 rounded-2xl bg-stone-900 text-white font-bold hover:shadow-lg hover:-translate-y-1 transition-all disabled:opacity-70 disabled:hover:translate-y-0 shadow-stone-900/30"
           >
             <ShareIcon />
             {isExporting === 'share-image' ? 'Sharing...' : 'Share Image'}
