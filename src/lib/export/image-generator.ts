@@ -177,9 +177,12 @@ export async function generateImage(
   // Create a temporary container
   const container = document.createElement('div');
   container.innerHTML = html;
-  container.style.position = 'fixed';
-  container.style.top = '-99999px';
-  container.style.left = '-99999px';
+  container.style.position = 'absolute';
+  container.style.left = '0';
+  container.style.top = '0';
+  container.style.zIndex = '-1000';
+  container.style.opacity = '0';
+  container.style.pointerEvents = 'none';
   document.body.appendChild(container);
 
   try {
